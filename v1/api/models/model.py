@@ -260,9 +260,11 @@ class Vendor(BASE):
     
     
 
-
-engine = create_engine('postgres://postgres:robus@localhost:5432/restaurant2')
-BASE.metadata.create_all(engine)
+def init_db(url):
+    engine = create_engine(url)
+    global BASE
+    BASE.metadata.create_all(engine)
+    return engine
 
     
 
