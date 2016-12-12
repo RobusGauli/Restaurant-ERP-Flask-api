@@ -134,8 +134,12 @@ def getCategoryItems(cat_id):
 		try:
 			category = session.query(ItemCategory).filter(ItemCategory.id == cat_id).one()
 			items = category.c_items
-			list_of_items = [dict(id=item.id, name=item.name, unit_price=item.unit_price, item_photo_uri = item.item_photo_uri) \
-																		for item in items]
+			list_of_items = [dict(id=item.id,
+								  name=item.name,
+								  unit_price=item.unit_price,
+								  item_photo_uri = item.item_photo_uri,
+								  url_id = url_for('getItem', item_id = item.id)									)
+								  for item in items]
 		except:
 			return jsonify(error_envelop(error_code=404, error_type='Value Error', error_message='ID is not available'))
 		
@@ -168,8 +172,12 @@ def getItems():
 			pagination = url_for('getItems') + '?page={0}&size={1}'.format(page + 1, size)
 		elif not request.args: #if there is no arguments in the url
 			sql_items = session.query(Item).order_by(Item.id).all()
-	items = [dict(id=item.id, name=item.name, item_photo_uri=item.item_photo_uri, description=item.description, unit_price=item.unit_price)
-																								for item in sql_items]
+	items = [dict(url_id = url_for('getItem',item_id=item.id),
+				 id=item.id, name=item.name,
+				 item_photo_uri=item.item_photo_uri,
+				 description=item.description,
+				 unit_price=item.unit_price)
+				 for item in sql_items]
 	return jsonify(envelop(data=items, code=200, pagination=pagination))
 
 @app.route('/api/v1/items/<int:item_id>', methods=['GET'])
@@ -191,11 +199,12 @@ def getItem(item_id):
 			sql_item = sesion.query(Item).filter(Item.id == item_id).one()
 			item['name'] = sql_item.name
 			item['id'] = sql_item.id
+			item['url_id'] = url_for('getItem', item_id=item_id)
 			item['item_photo_uri']  = sql_item.item_photo_uri
 			item['description'] = sql_item.description
 			item['unit_price'] = sql_item.unit_price
 		except:
-			return jsonify(error_envelop(404, 'ValueError', 'Invalid Error'))
+			return jsonify(error_envelop(404, 'ValueError', 'Invalid ID'))
 	return jsonify(envelop(data=item, code=200))
 
 
@@ -219,7 +228,7 @@ def getCategoryItem(cat_id, item_id):
 					}
 	'''
 
-	return redirect(url_for('getCategoryItems', cat_id=12))
+	return redirect(url_for('getItem', item_id=item_id))
 
 if __name__ == '__main__':
 	app.run(host='localhost', port=5000, debug=True)
