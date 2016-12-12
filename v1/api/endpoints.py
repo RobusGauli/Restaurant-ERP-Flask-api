@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 #my own utils modules
 from utils import SessionManager, keyrequire
 from utils import envelop, error_envelop, update_envelop, delete_envelop
+#for debugging
+import sys
 
 URL_DB = 'postgres://postgres:robus@localhost:5432/restaurantv1'
 
@@ -104,6 +106,22 @@ def deleteItemCategory(id):
 	return jsonify(delete_envelop(200))
 
 
+
+####api for items in the categories
+
+@app.route('/api/v1/itemcategories/<int:cat_id>/items', methods=['POST'])
+@keyrequire('name', 'unit_price')
+def setCategoryItem(cat_id):
+	name = request.json['name']
+	unit_price = int(request.json['unit_price'])
+
+
+	with SessionManager(Session) as session:
+		category = session.query(ItemCategory).filter(ItemCategory.id==cat_id).one()
+		category_item = Item(name=name, unit_price=unit_price)
+		category.c_items.append(category_item)
+		session.commit()
+	return jsonify(dict(status='created'))
 
 if __name__ == '__main__':
 	app.run(host='localhost', port=5000, debug=True)

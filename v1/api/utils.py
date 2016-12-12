@@ -17,12 +17,13 @@ from flask import request
 from flask import jsonify
 def keyrequire(*keys):
 	def decorator(func):
-		def wrapper(*args, **kwargs):
+		@wraps(func)
+		def wrap(*args, **kwargs):
 			for key in keys:
 				if not key in request.json:
 					return jsonify(dict(error = 'missing Keys : Please make sure keys are correct'))
 			return func(*args, **kwargs)
-		return wrapper
+		return wrap
 	return decorator
 
 
