@@ -107,21 +107,119 @@ def deleteItemCategory(id):
 
 
 
-####api for items in the categories
+####api for items in the categories-------------------*******------------
 
 @app.route('/api/v1/itemcategories/<int:cat_id>/items', methods=['POST'])
 @keyrequire('name', 'unit_price')
 def setCategoryItem(cat_id):
+	'''This function is used to set the item on the category using the on the given cate id'''
+
 	name = request.json['name']
 	unit_price = int(request.json['unit_price'])
-
-
 	with SessionManager(Session) as session:
 		category = session.query(ItemCategory).filter(ItemCategory.id==cat_id).one()
 		category_item = Item(name=name, unit_price=unit_price)
 		category.c_items.append(category_item)
 		session.commit()
 	return jsonify(dict(status='created'))
+
+@app.route('/api/v1/itemcategories/<int:cat_id>/items', methods=['GET'])
+def getCategoryItems(cat_id):
+	'''This function is used to get all the items in the category
+		Example : /api/v1/itemcategories/12/items 
+		Result : this gets the items of particualar category
+	'''
+	list_of_items = [] #declaring the empty list outside the context manager
+	with SessionManager(Session) as session:
+		try:
+			category = session.query(ItemCategory).filter(ItemCategory.id == cat_id).one()
+			items = category.c_items
+			list_of_items = [dict(id=item.id, name=item.name, unit_price=item.unit_price, item_photo_uri = item.item_photo_uri) \
+																		for item in items]
+		except:
+			return jsonify(error_envelop(error_code=404, error_type='Value Error', error_message='ID is not available'))
+		
+	return jsonify(envelop(code=200, data=list_of_items, pagination=None))
+
+
+@app.route('/api/v1/items', methods=['GET'])
+def getItems():
+	''' This function return all the items in the all the categories
+	Example : GET /api/v1/items HTTP/1.1
+	Result : {
+				"id": 1,
+				"item_photo_uri": "Image URI Not Available",
+				"name": "coke",
+				"unit_price": 45
+				},............. ... 
+	'''
+	page = None 
+	size = None
+	pagination = None
+	sql_items = [] #empty items 
+	if 'page' and 'size' in request.args:
+			page = int(request.args['page'])
+			size = int(request.args['size'])
+
+	with SessionManager(Session) as session:
+		#perform the pagination if given request.args
+		if isinstance(page, int) and isinstance(size, int):
+			sql_items = session.query(Item).order_by(Item.id).all()[page*size : page*size + size]
+			pagination = url_for('getItems') + '?page={0}&size={1}'.format(page + 1, size)
+		elif not request.args: #if there is no arguments in the url
+			sql_items = session.query(Item).order_by(Item.id).all()
+	items = [dict(id=item.id, name=item.name, item_photo_uri=item.item_photo_uri, description=item.description, unit_price=item.unit_price)
+																								for item in sql_items]
+	return jsonify(envelop(data=items, code=200, pagination=pagination))
+
+@app.route('/api/v1/items/<int:item_id>', methods=['GET'])
+def getItem(item_id):
+	''' This function is used to get the particular item in items..
+	Example : GET /api/v1/items/1 HTTP/1.1
+	Result : {
+				"description": "No Description Available",
+				"id": 1,
+				"item_photo_uri": "Image URI Not Available",
+				"name": "coke",
+				"unit_price": 45
+				}
+	'''
+	item = {}
+	with SessionManager(Session) as sesion:
+		#check to see if id exisst in items list
+		try:
+			sql_item = sesion.query(Item).filter(Item.id == item_id).one()
+			item['name'] = sql_item.name
+			item['id'] = sql_item.id
+			item['item_photo_uri']  = sql_item.item_photo_uri
+			item['description'] = sql_item.description
+			item['unit_price'] = sql_item.unit_price
+		except:
+			return jsonify(error_envelop(404, 'ValueError', 'Invalid Error'))
+	return jsonify(envelop(data=item, code=200))
+
+
+
+
+		
+
+
+
+	 
+
+@app.route('/api/v1/itemcategories/<int:cat_id>/items/<int:item_id>', methods=['GET'])
+def getCategoryItem(cat_id, item_id):
+	'''This function will return the particular item from the list of items
+		Example : GET /api/v1/itemcategories/12/items/1 	HTTP/1.1
+		Result : {
+					"id": 5,
+					"item_photo_uri": "Image URI Not Available",
+					"name": "Fanta",
+					"unit_price": 34
+					}
+	'''
+
+	return redirect(url_for('getCategoryItems', cat_id=12))
 
 if __name__ == '__main__':
 	app.run(host='localhost', port=5000, debug=True)
