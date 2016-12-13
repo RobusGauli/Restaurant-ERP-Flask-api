@@ -8,7 +8,7 @@ from utils import SessionManager, keyrequire
 from utils import envelop, error_envelop, update_envelop, delete_envelop
 #for debugging
 import sys
-
+from utilendpoints import *
 URL_DB = 'postgres://postgres:robus@localhost:5432/restaurantv1'
 
 engine = init_db(URL_DB)
