@@ -209,19 +209,13 @@ def getItem(item_id):
 
 
 
-
-		
-
-
-
-	 
-
 @app.route('/api/v1/itemcategories/<int:cat_id>/items/<int:item_id>', methods=['GET'])
 def getCategoryItem(cat_id, item_id):
 	'''This function will return the particular item from the list of items
 		Example : GET /api/v1/itemcategories/12/items/1 	HTTP/1.1
 		Result : {
 					"id": 5,
+					"url_id" : "/api/v1/items/5"
 					"item_photo_uri": "Image URI Not Available",
 					"name": "Fanta",
 					"unit_price": 34
@@ -229,6 +223,29 @@ def getCategoryItem(cat_id, item_id):
 	'''
 
 	return redirect(url_for('getItem', item_id=item_id))
+
+#updating the category item
+@app.route('/api/v1/itemcategories/<int:cat_id>/items/<int:item_id>', methods=['PUT'])
+@keyrequire('name', 'unit_price')
+def updateCategoryItem(cat_id, item_id):
+	'''This function is used to update the database item.
+	Example : PUT /api/v1/itemcategories/12/items/1 HTTP/1.1
+	Request Body {"name" : "Changed Name", "unit_price" : 234}
+	Result : {"Status" : " Successfully Updated", "code" =200}
+	'''
+	with SessionManager(Session) as session:
+		try:
+			sql_item = session.query(Item).filter(Item.id == item_id).one()
+			#it will return the value if exists or throws an exception if does not find one
+			sql_item.name = request.json.get('name', sql_item.name)
+			sql_item.unit_price = request.json.get('unit_price', sql_item.unit_price)
+			session.commit()
+		except:
+			return jsonify(error_envelop(404, 'ValueError', 'Id : {0} not found'.format(item_id)))
+	return jsonify(dict(status='created Successfully'))
+
+
+
 
 if __name__ == '__main__':
 	app.run(host='localhost', port=5000, debug=True)
