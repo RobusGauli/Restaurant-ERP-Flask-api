@@ -226,7 +226,6 @@ def getCategoryItem(cat_id, item_id):
 
 #updating the category item
 @app.route('/api/v1/itemcategories/<int:cat_id>/items/<int:item_id>', methods=['PUT'])
-@keyrequire('name', 'unit_price')
 def updateCategoryItem(cat_id, item_id):
 	'''This function is used to update the database item.
 	Example : PUT /api/v1/itemcategories/12/items/1 HTTP/1.1
@@ -243,6 +242,27 @@ def updateCategoryItem(cat_id, item_id):
 		except:
 			return jsonify(error_envelop(404, 'ValueError', 'Id : {0} not found'.format(item_id)))
 	return jsonify(dict(status='created Successfully'))
+
+
+@app.route('/api/v1/itemcategories/<int:cat_id>/items/<int:item_id>', methods=['DELETE'])
+def deleteCategoryItem(cat_id, item_id):
+	''' This function will delete the item in the categories
+	Example : DELETE api/v1/itemcategories/12/items/2 HTTP/1.1
+	Result : {
+				"meta": {
+				"code": 200,
+				"message": "Deleted Successfully"
+				}
+				}
+	''' 
+	with SessionManager(Session) as session:
+		try: 
+			sql_item = session.query(Item).filter(Item.id==item_id).one()
+			session.delete(sql_item)
+			session.commit()
+			return jsonify(delete_envelop(code=200))
+		except:
+			return jsonify(error_envelop(error_code=404, error_type='ValueError', error_message='No ID:{0} found!!'.format(item_id)))
 
 
 
